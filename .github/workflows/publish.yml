@@ -85,16 +85,13 @@ jobs:
           cp {README.md,LICENSE} "$staging/"
 
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            dir
-
-            cp rust-experiments.exe "$staging/"
+            cp target/release/rust-experiments.exe "$staging/"
             7z a "$staging.zip" "$staging"
             echo "ASSET=$staging.zip" >> $GITHUB_ENV
           else
-            ls -al
-            ls -al rust-experiments-linux-x86_64_
             ls -al target/release/
-            cp rust-experiments "$staging/"
+            cp target/release/rust-experiments "$staging/"
+            cp target/release/rust-experiments.d "$staging/"
             tar czf "$staging.tar.gz" "$staging"
             echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
           fi
