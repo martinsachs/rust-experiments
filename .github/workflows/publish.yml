@@ -92,6 +92,8 @@ jobs:
             echo "ASSET=$staging.zip" >> $GITHUB_ENV
           else
             ls -al
+            ls -al rust-experiments-linux-x86_64_
+            ls -al target/release/
             cp rust-experiments "$staging/"
             tar czf "$staging.tar.gz" "$staging"
             echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
