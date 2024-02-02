@@ -9,28 +9,8 @@ on:
   pull_request:
 
 jobs:
-  create-release:
-    runs-on: 'ubuntu-latest'
-    steps:
-    - name: Create Release
-      id: create-release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: ${{ github.ref }}
-    - shell: bash
-      run: |
-        echo '${{ steps.create-release.outputs.upload_url }}' > upload_url.txt
-    - name: Save GitHub release upload URL for next job
-      uses: actions/upload-artifact@v4
-      with:
-        name: upload_url
-        path: upload_url.txt
   create-assets:
-    needs:
-      - 'create-release'
+    name: release ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
@@ -38,41 +18,51 @@ jobs:
         target:
           - x86_64-pc-windows-msvc
           - i686-pc-windows-msvc
+          - x86_64-unknown-linux-musl
+          - x86_64-apple-darwin
         include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            archive: zip
           - os: windows-latest
             target: i686-pc-windows-msvc
-            asset_path: ./target/release/rust-experiemnts.exe
-            asset_name: rust-experiemnts-x86.exe
+            archive: zip
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            asset_path: ./target/release/rust-experiemnts.exe
-            asset_name: rust-experiemnts-x64.exe
+            archive: zip
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            archive: zip
     steps:
       - uses: actions/checkout@master
-      - name: Fetch GitHub Release upload URL
-        uses: actions/download-artifact@v4
-        with:
-          name: upload_url
-      - name: Load Upload URL File from release job
-        id: get_release_info
-        run: |
-            echo "::set-output name=upload_url::$(cat upload_url/upload_url.txt)"
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable-${{ matrix.target }}
-          target: ${{ matrix.target }}
-          default: true
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release
-      - uses: actions/upload-release-asset@v1
+      - name: Compile and release
+        uses: rust-build/rust-build.action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.get_release_info.outputs.upload_url }}
-          asset_path: ${{ matrix.asset_path }}
-          asset_name: ${{ matrix.asset_name }}
-          asset_content_type: application/octet-stream
+          RUSTTARGET: ${{ matrix.target }}
+          EXTRA_FILES: "README.md"
+          SRC_DIR: "hello"
+          ARCHIVE_TYPES: ${{ matrix.archive }}
+          PRE_BUILD: "pre_build.sh"
+          POST_BUILD: "test/post_build.sh"
+          MINIFY: "yes"
+#       - uses: actions-rs/toolchain@v1
+#         with:
+#           profile: minimal
+#           toolchain: stable-${{ matrix.target }}
+#           target: ${{ matrix.target }}
+#           default: true
+#           override: true
+#       - uses: actions-rs/cargo@v1
+#         with:
+#           command: build
+#           args: --release
+#       - uses: actions/upload-release-asset@v1
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         with:
+#           upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+#           asset_path: ${{ matrix.asset_path }}
+#           asset_name: ${{ matrix.asset_name }}
+#           asset_content_type: application/octet-stream
