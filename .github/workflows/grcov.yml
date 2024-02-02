@@ -1,0 +1,35 @@
+name: Coverage
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  grcov:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions-rs/toolchain@master
+        with:
+          toolchain: stable
+          override: true
+      - name: Build and test sources
+        run: |
+          cargo build;
+          cargo test;
+        env:
+          CARGO_INCREMENTAL: '0'
+          RUST_TEST_THREADS: '1'
+          RUSTC_BOOTSTRAP: '1'
+          RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort'
+      - name: Collect hit files, install grcov and create coveralls report
+        run: |
+          zip -0 ccov.zip `find . \( -name "*k2*.gc*" \) -print`;
+          cargo install grcov;
+          grcov ccov.zip -s . -t coveralls --llvm --branch --ignore-not-existing --ignore "/*" --token ${{ secrets.CODECOV_TOKEN }} > coveralls.json
+      - uses: codecov/codecov-action@master
+        with:
+          file: ./coveralls.json
+          fail_ci_if_error: true
