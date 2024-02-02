@@ -102,7 +102,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
             name: release-${{ matrix.os }}-${{ matrix.build }}
-            path: target/release/*.tar.gz
+            path: rust-experiments-*
       - name: Upload Release Asset
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
@@ -110,7 +110,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           name: release-${{ matrix.os }}-${{ matrix.build }}
-          path: target/release/*.zip
+          path: rust-experiments-*
 
 
 
