@@ -79,17 +79,17 @@ jobs:
       - name: Build archive
         shell: bash
         run: |
-          staging="rustfmt_${{ matrix.build }}_${{ github.event.release.tag_name }}"
+          staging="rust-experiments-${{ matrix.build }}_${{ github.event.release.tag_name }}"
           mkdir -p "$staging"
 
           cp {README.md,LICENSE} "$staging/"
 
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            cp target/release/{rust-experiments.exe} "$staging/"
+            cp {rust-experiments.exe} "$staging/"
             7z a "$staging.zip" "$staging"
             echo "ASSET=$staging.zip" >> $GITHUB_ENV
           else
-            cp target/release/{rust-experiments} "$staging/"
+            cp {rust-experiments} "$staging/"
             tar czf "$staging.tar.gz" "$staging"
             echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
           fi
