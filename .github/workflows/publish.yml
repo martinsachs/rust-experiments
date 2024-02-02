@@ -104,30 +104,39 @@ jobs:
             name: release-${{ matrix.os }}-${{ matrix.build }}
             path: rust-experiments-*
 
-      - name: Download Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: release-${{ matrix.os }}-${{ matrix.build }}
+#       - name: Download Artifact
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: release-${{ matrix.os }}-${{ matrix.build }}
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release
+        uses: softprops/action-gh-release@v1
+#         if: startsWith(github.ref, 'refs/tags/')
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.ASSET }}
-          asset_name: ${{ env.ASSET }}
-          asset_content_type: application/octet-stream
+          files: |
+                rust-experiments-*.tar.gz
+                rust-experiments-*.zip
+
+
+#       - name: Create Release
+#         id: create_release
+#         uses: actions/create-release@v1
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         with:
+#           tag_name: ${{ github.ref_name }}
+#           release_name: Release ${{ github.ref_name }}
+#           draft: false
+#           prerelease: false
+#       - name: Upload Release Asset
+#         uses: actions/upload-release-asset@v1
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         with:
+#           upload_url: ${{ steps.create_release.outputs.upload_url }}
+#           asset_path: ${{ env.ASSET }}
+#           asset_name: ${{ env.ASSET }}
+#           asset_content_type: application/octet-stream
 
 
 
