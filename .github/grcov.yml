@@ -26,10 +26,10 @@ jobs:
           RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort'
       - name: Collect hit files, install grcov and create coveralls report
         run: |
-          zip -0 ccov.zip `find . \( -name "*k2*.gc*" \) -print`;
+          zip -0 ccov.zip `find . \( -name "*rust*.gc*" \) -print`;
           cargo install grcov;
           grcov ccov.zip -s . -t coveralls --llvm --branch --ignore-not-existing --ignore "/*" --token ${{ secrets.CODECOV_TOKEN }} > coveralls.json
       - uses: codecov/codecov-action@v4
         with:
           file: ./coveralls.json
-          fail_ci_if_error: true
+          fail_ci_if_error: false
