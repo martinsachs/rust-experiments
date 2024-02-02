@@ -9,44 +9,113 @@ on:
   pull_request:
 
 jobs:
-  create-assets:
+  create-windows-assets:
     name: release ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
-        target:
-          - x86_64-pc-windows-msvc
-          - i686-pc-windows-msvc
-          - x86_64-unknown-linux-musl
-          - x86_64-apple-darwin
+        build:
+          - linux-x86_64
+          - macos-x86_64
+          - windows-x86_64-msvc
         include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-musl
-            archive: zip
-          - os: windows-latest
-            target: i686-pc-windows-msvc
-            archive: zip
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            archive: zip
-          - os: macos-latest
+          - build: linux-x86_64
+            os: ubuntu-latest
+#             rust: nightly
+            target: x86_64-unknown-linux-gnu
+          - build: macos-x86_64
+            os: macos-latest
+#             rust: nightly
             target: x86_64-apple-darwin
-            archive: zip
+#           - build: windows-x86_64-gnu
+#             os: windows-latest
+#             rust: nightly-x86_64-gnu
+#             target: x86_64-pc-windows-gnu
+          - build: windows-x86_64-msvc
+            os: windows-latest
+#             rust: nightly-x86_64-msvc
+            target: x86_64-pc-windows-msvc
+#           - x86_64-pc-windows-msvc
+#           - i686-pc-windows-msvc
+#           - x86_64-unknown-linux-musl
+#           - x86_64-apple-darwin
+#         include:
+#           - os: ubuntu-latest
+#             target: x86_64-unknown-linux-musl
+#             archive: zip
+#           - os: windows-latest
+#             target: i686-pc-windows-msvc
+#             archive: zip
+#           - os: windows-latest
+#             target: x86_64-pc-windows-msvc
+#             archive: zip
+#           - os: macos-latest
+#             target: x86_64-apple-darwin
+#             archive: zip
     steps:
+      - name: disable git eol translation
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@master
-      - name: Compile and release
-        uses: rust-build/rust-build.action@master
+
+        # Run build
+      - name: install rustup
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup-init.sh
+          sh rustup-init.sh -y --default-toolchain none
+          rustup target add ${{ matrix.target }}
+#       - name: Install Rustup using win.rustup.rs
+#         run: |
+#           # Disable the download progress bar which can cause perf issues
+#           $ProgressPreference = "SilentlyContinue"
+#           Invoke-WebRequest https://win.rustup.rs/ -OutFile rustup-init.exe
+#           .\rustup-init.exe -y --default-host=x86_64-pc-windows-msvc --default-toolchain=none
+#           del rustup-init.exe
+#           rustup target add ${{ matrix.target }}
+#         shell: powershell
+      - name: Build release binaries
+        run: cargo build --release
+
+      - name: Build archive
+        shell: bash
+        run: |
+          staging="rustfmt_${{ matrix.build }}_${{ github.event.release.tag_name }}"
+          mkdir -p "$staging"
+
+          cp {README.md,LICENSE} "$staging/"
+
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cp target/release/{rust-experiments.exe} "$staging/"
+            7z a "$staging.zip" "$staging"
+            echo "ASSET=$staging.zip" >> $GITHUB_ENV
+          else
+            cp target/release/{rust-experiments} "$staging/"
+            tar czf "$staging.tar.gz" "$staging"
+            echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
+          fi
+
+      - name: Upload Release Asset
+        if: github.event_name == 'release'
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          RUSTTARGET: ${{ matrix.target }}
-          EXTRA_FILES: "README.md"
-          SRC_DIR: "hello"
-          ARCHIVE_TYPES: ${{ matrix.archive }}
-          PRE_BUILD: "pre_build.sh"
-          POST_BUILD: "test/post_build.sh"
-          MINIFY: "yes"
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ env.ASSET }}
+          asset_name: ${{ env.ASSET }}
+          asset_content_type: application/octet-stream
+#       - name: Compile and release
+#         uses: rust-build/rust-build.action@master
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         with:
+#           RUSTTARGET: ${{ matrix.target }}
+#           EXTRA_FILES: "README.md"
+#           SRC_DIR: "hello"
+#           ARCHIVE_TYPES: ${{ matrix.archive }}
+#           PRE_BUILD: "pre_build.sh"
+#           POST_BUILD: "test/post_build.sh"
+#           MINIFY: "yes"
 #       - uses: actions-rs/toolchain@v1
 #         with:
 #           profile: minimal
